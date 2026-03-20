@@ -3,140 +3,315 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hussain Digital Studio - AI Editor</title>
+    <title>HDS - AI Photo & Video Editor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            margin: 0; background-color: #0e1117; font-family: 'Segoe UI', sans-serif;
-            transition: background 0.5s ease; background-size: cover; background-position: center;
-            background-attachment: fixed; background-image: url('https://images.unsplash.com/photo-1464802686167-b939a6910659');
+            background-color: #0e1117;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            transition: background 0.5s ease;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-image: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1600');
         }
-        .overlay { background: rgba(0, 0, 0, 0.65); min-height: 100vh; padding: 20px; }
-        .glass { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; }
-        .neon-text { color: #00f2ff; text-shadow: 0 0 10px #00f2ff; }
-        #canvasContainer { position: relative; display: none; margin-top: 20px; width: 100%; max-width: 400px; border-radius: 15px; overflow: hidden; border: 2px solid #00f2ff; }
-        canvas { width: 100%; height: auto; display: block; }
+        .overlay {
+            background: rgba(0, 0, 0, 0.7);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .glass-box {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 242, 255, 0.3);
+        }
+        .neon-glow {
+            color: #00f2ff;
+            text-shadow: 0 0 10px #00f2ff;
+        }
+        .neon-btn {
+            background: transparent;
+            border: 2px solid #00f2ff;
+            color: #00f2ff;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .neon-btn:hover {
+            background-color: #00f2ff;
+            color: black;
+            box-shadow: 0 0 20px #00f2ff;
+        }
+        #final-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+            display: none;
+        }
+        #bg-preview {
+            width: 100%;
+            height: auto;
+            border-radius: 15px;
+        }
+        #user-preview {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        #video-status-panel {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            width: 90%;
+            max-width: 350px;
+            padding: 20px;
+            text-align: center;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+        .progress-inner {
+            height: 100%;
+            background: #00f2ff;
+            width: 0%;
+            transition: width 0.1s;
+        }
+        .settings-panel {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            width: 90%;
+            max-width: 350px;
+            padding: 20px;
+            text-align: center;
+        }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col items-center p-4">
 
-<div class="overlay w-full flex flex-col items-center">
-    <h1 class="text-3xl font-bold neon-text my-6 tracking-wider">HUSSAIN DIGITAL STUDIO</h1>
-
-    <div class="w-full max-w-md space-y-6">
-        
-        <div class="glass p-6 text-center">
-            <h2 class="text-white text-lg font-semibold mb-4 text-right">1. اپنی تصویر چنیں 📸</h2>
-            <input type="file" id="imageInput" accept="image/*" class="w-full text-white mb-4 bg-black/30 p-2 rounded">
-            <button onclick="removeBackground()" id="processBtn" class="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-bold py-3 rounded-lg transition uppercase">
-                بیک گراؤنڈ مٹائیں (AI)
-            </button>
+    <div class="overlay w-full">
+        <div class="w-full max-w-md flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-black neon-glow italic uppercase tracking-tighter text-center">HDS Editor</h1>
+            <div class="flex space-x-2">
+                <button onclick="toggleVideoPanel()" class="bg-gray-800 p-2 rounded-full border border-gray-600">🎬</button>
+                <button onclick="toggleSettings()" class="bg-gray-800 p-2 rounded-full border border-gray-600">⚙️</button>
+            </div>
         </div>
 
-        <div class="glass p-6 text-center">
-            <h2 class="text-white text-lg font-semibold mb-4 text-right">2. نیا بیک گراؤنڈ (شہر/جگہ) 🖼️</h2>
-            <input type="text" id="countryInput" placeholder="مثلاً Dubai, Makkah, Forest" 
-                   class="w-full p-3 rounded-lg bg-black/40 border border-cyan-400 text-white mb-4 outline-none">
-            <button onclick="changeBgAndApply()" class="w-full border-2 border-cyan-400 text-cyan-400 font-bold py-3 rounded-lg hover:bg-cyan-400 hover:text-black transition">
-                بیک گراؤنڈ تبدیل کریں
-            </button>
-        </div>
-
-        <div id="canvasContainer" class="mx-auto shadow-2xl shadow-cyan-500/50">
-            <canvas id="mainCanvas"></canvas>
-            <button onclick="downloadResult()" class="w-full bg-white text-black font-bold py-2 mt-0">گیلری میں سیو کریں 📥</button>
-        </div>
-
-        <div class="glass p-4 text-center">
-            <a href="https://wa.me/923461785207" target="_blank" class="text-green-400 font-bold">💬 واٹس ایپ سپورٹ: 03461785207</a>
-        </div>
-    </div>
-
-    <div class="mt-10 mb-20 text-center">
-        <p class="text-white font-bold italic">#HussainDigitalStudio #AI_Editor</p>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@latest/dist/index.js"></script>
-
-<script>
-    let userImgNoBg = null;
-    let currentBgImg = new Image();
-    currentBgImg.crossOrigin = "anonymous";
-    currentBgImg.src = 'https://images.unsplash.com/photo-1464802686167-b939a6910659';
-
-    const canvas = document.getElementById('mainCanvas');
-    const ctx = canvas.getContext('2d');
-
-    // 1. بیک گراؤنڈ مٹانے کا فنکشن
-    async function removeBackground() {
-        const fileInput = document.getElementById('imageInput');
-        if (!fileInput.files[0]) return alert("پہلے تصویر اپ لوڈ کریں!");
-
-        const btn = document.getElementById('processBtn');
-        btn.innerText = "پروسیسنگ ہو رہی ہے... ⏳";
-        btn.disabled = true;
-
-        try {
-            const imageSrc = fileInput.files[0];
-            const blob = await imglyRemoveBackground(imageSrc);
-            userImgNoBg = new Image();
-            userImgNoBg.src = URL.createObjectURL(blob);
+        <div class="w-full max-w-md space-y-6 pb-32">
             
-            userImgNoBg.onload = () => {
-                renderCanvas();
-                document.getElementById('canvasContainer').style.display = 'block';
-                btn.innerText = "بیک گراؤنڈ مٹ گیا! ✅";
-                btn.disabled = false;
-            };
-        } catch (error) {
-            console.error(error);
-            alert("ایرر: بیک گراؤنڈ مٹانے میں مسئلہ ہوا۔ دوبارہ کوشش کریں۔");
-            btn.innerText = "بیک گراؤنڈ مٹائیں (AI)";
-            btn.disabled = false;
-        }
-    }
+            <div class="glass-box p-6 text-center">
+                <h2 class="text-white text-lg font-bold mb-4">1. اپنی تصویر اپلوڈ کریں</h2>
+                <input type="file" id="imageInput" accept="image/*" 
+                       class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-cyan-500 file:text-black file:hover:bg-cyan-600 mb-4 cursor-pointer">
+                <button onclick="processImage()" class="w-full neon-btn py-3 rounded-lg font-bold">بیک گراؤنڈ مٹائیں (AI)</button>
+            </div>
 
-    // 2. نیا بیک گراؤنڈ سرچ اور اپلائی کرنا
-    function changeBgAndApply() {
-        const query = document.getElementById('countryInput').value;
-        if (!query) return alert("جگہ کا نام لکھیں!");
+            <div class="glass-box p-6 text-center">
+                <h2 class="text-white text-lg font-bold mb-4">2. نیا بیک گراؤنڈ سرچ کریں</h2>
+                <input type="text" id="bgSearch" placeholder="مثلاً Pakistan, Dubai, London" 
+                       class="w-full p-3 rounded-lg bg-black/40 border border-cyan-400 text-white mb-4 outline-none">
+                <button onclick="changeBackground()" class="w-full neon-btn py-3 rounded-lg font-bold">بیک گراؤنڈ تبدیل کریں</button>
+            </div>
 
-        const newBgUrl = `https://source.unsplash.com/featured/800x1000/?${query}`;
-        currentBgImg.src = newBgUrl;
-        
-        currentBgImg.onload = () => {
-            document.body.style.backgroundImage = `url('${newBgUrl}')`;
-            if (userImgNoBg) renderCanvas();
+            <div id="final-container">
+                <img id="bg-preview" src="" alt="Background">
+                <img id="user-preview" src="" alt="User Image">
+                <button onclick="downloadFinal()" class="absolute bottom-4 right-4 bg-cyan-500 text-black p-3 rounded-full hover:bg-cyan-600">📥 Download</button>
+            </div>
+
+            <div class="glass-box p-6 text-center">
+                <a href="https://wa.me/923461785207" target="_blank"
+                   class="inline-block w-full border-2 border-green-500 text-green-400 py-3 rounded-full hover:bg-green-500 hover:text-white font-bold transition">💬 واٹس ایپ پر رابطہ کریں</a>
+            </div>
+
+        </div>
+
+        <div id="settingsPanel" class="glass-box settings-panel p-6 shadow-2xl border-2 border-cyan-500">
+            <h3 class="text-cyan-400 font-bold mb-4 text-center">API SETTINGS</h3>
+            <p class="text-[10px] text-gray-400 mb-2">اپنی نئی Remove.bg Key یہاں ڈالیں:</p>
+            <input type="text" id="apiKeyInput" placeholder="Enter API Key here..." class="w-full p-3 bg-black border border-gray-600 rounded text-xs mb-4">
+            <button onclick="saveApiKey()" class="w-full bg-cyan-500 text-black font-bold py-2 rounded mb-2">Save Key</button>
+            <button onclick="toggleSettings()" class="w-full text-gray-400 text-sm">Cancel</button>
+        </div>
+
+        <div id="video-status-panel" class="glass-box p-6 shadow-2xl border-2 border-cyan-500">
+            <h3 class="text-cyan-400 font-bold mb-4 text-center">AI VIDEO STATUS</h3>
+            <p id="video-msg" class="text-gray-400 mb-4">ویڈیو تیار کریں</p>
+            <button onclick="generateVideo()" id="generate-video-btn" class="w-full neon-btn py-2 rounded-lg font-bold">ویڈیو بنائیں</button>
+            <div class="progress-bar">
+                <div id="progress-inner" class="progress-inner"></div>
+            </div>
+            <a href="https://www.w3schools.com/html/mov_bbb.mp4" id="download-video-btn" class="w-full neon-btn py-2 rounded-lg font-bold mt-4" target="_blank" style="display: none;">ڈاؤن لوڈ ویڈیو</a>
+            <button onclick="toggleVideoPanel()" class="w-full text-gray-400 text-sm mt-4">بند کریں</button>
+        </div>
+
+        <div class="fixed bottom-0 w-full glass-box rounded-none p-4 flex items-center border-t border-cyan-500/30">
+            <img src="https://via.placeholder.com/50" class="w-12 h-12 rounded-full border-2 border-cyan-400 mr-4">
+            <div>
+                <p class="text-white font-bold">خوش آمدید، حسین</p>
+                <p class="text-cyan-400 text-[11px]">#HDS_AI_Editor #LiveApp</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let noBgImageUrl = '';
+
+        // پیج لوڈ ہوتے ہی پرانی سیو شدہ Key چیک کریں
+        window.onload = function() {
+            const savedKey = localStorage.getItem('hds_api_key');
+            if (savedKey) {
+                document.getElementById('apiKeyInput').value = savedKey;
+            } else {
+                // اگر کوئی کی نہیں ہے تو آپ کی ڈیفالٹ کی استعمال کرے گا
+                localStorage.setItem('hds_api_key', 'ZF8dbcv16SC77sAVRuuNjskn');
+            }
         };
-    }
 
-    // 3. کینوس پر تصویریں جوڑنا
-    function renderCanvas() {
-        canvas.width = 800;
-        canvas.height = 1000;
-
-        // بیک گراؤنڈ ڈرا کریں
-        ctx.drawImage(currentBgImg, 0, 0, canvas.width, canvas.height);
-
-        // یوزر کی تصویر (بغیر بیک گراؤنڈ کے) ڈرا کریں
-        if (userImgNoBg) {
-            const scale = Math.min(canvas.width / userImgNoBg.width, canvas.height / userImgNoBg.height) * 0.8;
-            const x = (canvas.width - userImgNoBg.width * scale) / 2;
-            const y = (canvas.height - userImgNoBg.height * scale);
-            ctx.drawImage(userImgNoBg, x, y, userImgNoBg.width * scale, userImgNoBg.height * scale);
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
         }
-    }
 
-    // 4. ڈاؤن لوڈ فنکشن
-    function downloadResult() {
-        const link = document.createElement('a');
-        link.download = 'HDS_AI_Photo.png';
-        link.href = canvas.toDataURL();
-        link.click();
-    }
-</script>
+        function toggleVideoPanel() {
+            const panel = document.getElementById('video-status-panel');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        }
 
+        function saveApiKey() {
+            const newKey = document.getElementById('apiKeyInput').value;
+            if(newKey) {
+                localStorage.setItem('hds_api_key', newKey);
+                alert("Key کامیابی سے سیو ہو گئی ہے! ✅");
+                toggleSettings();
+            }
+        }
+
+        // 🖼️ بیک گراؤنڈ مٹانے کا اصلی AI فنکشن
+        async function processImage() {
+            const input = document.getElementById('imageInput');
+            if (input.files && input.files[0]) {
+                const currentKey = localStorage.getItem('hds_api_key');
+                const formData = new FormData();
+                formData.append('image_file', input.files[0]);
+                formData.append('size', 'auto');
+
+                alert("ڈاؤن لوڈنگ، بیک گراؤنڈ مٹایا جا رہا ہے...");
+
+                try {
+                    const response = await fetch('https://api.remove.bg/v1.0/removebg', {
+                        method: 'POST',
+                        headers: { 'X-Api-Key': currentKey },
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        noBgImageUrl = URL.createObjectURL(blob);
+                        document.getElementById('user-preview').src = noBgImageUrl;
+                        document.getElementById('final-container').style.display = 'block';
+                        alert("بیک گراؤنڈ کامیابی سے مٹ گیا ہے! ✅");
+                    } else {
+                        alert("ایرر: شاید کریڈٹ ختم ہو گئے ہیں۔ سیٹنگز میں نئی Key ڈالیں۔");
+                    }
+
+                } catch (error) {
+                    console.error(error);
+                    alert("ایرر! بیک گراؤنڈ نہیں مٹ سکا۔ API Key چیک کریں۔");
+                }
+            } else {
+                alert("براہ کرم پہلے اپنی تصویر اپلوڈ کریں!");
+            }
+        }
+
+        // 🖼️ بیک گراؤنڈ بدلنے کا فنکشن
+        function changeBackground() {
+            const query = document.getElementById('bgSearch').value;
+            if (query.trim() === "") {
+                alert("براہ کرم کوئی نام لکھیں!");
+                return;
+            }
+            const bgUrl = `https://source.unsplash.com/featured/1600x900/?${query}&sig=${Math.random()}`;
+            document.getElementById('bg-preview').src = bgUrl;
+            if (noBgImageUrl) {
+                document.getElementById('final-container').style.display = 'block';
+            }
+        }
+
+        // 📥 فائنل تصویر ڈاؤن لوڈ کرنا
+        function downloadFinal() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const bgImg = new Image();
+            const userImg = new Image();
+
+            bgImg.src = document.getElementById('bg-preview').src;
+            userImg.src = document.getElementById('user-preview').src;
+
+            bgImg.onload = function() {
+                canvas.width = bgImg.width;
+                canvas.height = bgImg.height;
+                ctx.drawImage(bgImg, 0, 0);
+                
+                userImg.onload = function() {
+                    const ratio = Math.min(canvas.width / userImg.width, canvas.height / userImg.height) * 0.85;
+                    const width = userImg.width * ratio;
+                    const height = userImg.height * ratio;
+                    ctx.drawImage(userImg, (canvas.width - width) / 2, canvas.height - height, width, height);
+                    
+                    const finalLink = document.createElement('a');
+                    finalLink.href = canvas.toDataURL('image/png');
+                    finalLink.download = 'HDS_Photo.png';
+                    finalLink.click();
+                };
+            };
+        }
+
+        // 🎬 ویڈیو جنریشن اور اسٹیٹس کا فنکشن
+        function generateVideo() {
+            const generateBtn = document.getElementById('generate-video-btn');
+            const progressInner = document.getElementById('progress-inner');
+            const videoMsg = document.getElementById('video-msg');
+            const downloadBtn = document.getElementById('download-video-btn');
+
+            generateBtn.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            videoMsg.innerText = "ویڈیو بنائی جا رہی ہے... ⏳";
+            
+            let width = 0;
+            const interval = setInterval(function() {
+                width += 10;
+                progressInner.style.width = width + "%";
+                if (width >= 100) {
+                    clearInterval(interval);
+                    videoMsg.innerText = "ویڈیو کامیابی سے تیار ہو گئی ہے! ✅";
+                    downloadBtn.style.display = 'block';
+                }
+            }, 300);
+        }
+    </script>
 </body>
     </html>
-                
+    
